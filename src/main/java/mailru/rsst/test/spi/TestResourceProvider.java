@@ -1,5 +1,6 @@
 package mailru.rsst.test.spi;
 
+import org.keycloak.email.EmailException;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
@@ -33,11 +34,28 @@ public class TestResourceProvider implements RealmResourceProvider {
         if (userModel == null) {
             throw new NotFoundException("user with username " + resetPasswordRequest.getUsername() + " not found");
         }
-        logger.info("user " + userModel.getId() + " " + userModel.getUsername());
 
         ResetCredentialsActionToken token = new ResetCredentialsActionToken(userModel.getId(), 1000);
+        String tokenSerialized = token.serialize(keycloakSession, realm, uri);
+        logger.info("token " + tokenSerialized);
 
-        logger.info("token " + token.serialize(keycloakSession, realm, uri));
+        String email = userModel.getEmail();
+        logger.info("email " + email);
+
+        if (userModel != null && email != null) {
+            org.keycloak.email.DefaultEmailSenderProvider senderProvider = new org.keycloak.email.DefaultEmailSenderProvider(keycloakSession);
+            try {
+                senderProvider.send(
+                        keycloakSession.getContext().getRealm().getSmtpConfig(),
+                        userModel,
+                        "смена пароля",
+                        "для смены пароля перейдите по ссылке: http://www.smth.ru/reset-password/" + tokenSerialized,
+                        "для смены пароля перейдите по ссылке: <a href=\"http://www.smth.ru/reset-password/" + tokenSerialized + "\">сменить пароль</a>"
+                );
+            } catch (EmailException e) {
+                e.printStackTrace();
+            }
+        }
 
         //userModel.addRequiredAction(UserModel.RequiredAction.UPDATE_PASSWORD);
         //logger.info("added required action");
