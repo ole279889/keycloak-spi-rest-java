@@ -1,4 +1,4 @@
-package mailru.rsst.test.spi;
+package mailru.rsst.test.spi.entity;
 
 public class UserDetails {
 

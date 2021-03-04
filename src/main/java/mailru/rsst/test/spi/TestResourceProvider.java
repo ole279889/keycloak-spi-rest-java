@@ -1,5 +1,7 @@
 package mailru.rsst.test.spi;
 
+import mailru.rsst.test.spi.entity.ResetPasswordRequest;
+import org.keycloak.email.DefaultEmailSenderProvider;
 import org.keycloak.email.EmailException;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
@@ -12,6 +14,8 @@ import javax.ws.rs.core.UriInfo;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Map;
 
 public class TestResourceProvider implements RealmResourceProvider {
 
@@ -26,11 +30,13 @@ public class TestResourceProvider implements RealmResourceProvider {
     @Path("reset-password")
     @POST
     @Encoded
-    public void resetPassword(ResetPasswordRequest resetPasswordRequest) {
+    public void resetPassword(ResetPasswordRequest resetPasswordRequest) throws EmailException {
+
         logger.info("request " + resetPasswordRequest);
         RealmModel realm = keycloakSession.getContext().getRealm();
         UriInfo uri = keycloakSession.getContext().getUri();
         UserModel userModel = keycloakSession.users().getUserByUsername(resetPasswordRequest.getUsername(), realm);
+
         if (userModel == null) {
             throw new NotFoundException("user with username " + resetPasswordRequest.getUsername() + " not found");
         }
@@ -43,17 +49,18 @@ public class TestResourceProvider implements RealmResourceProvider {
         logger.info("email " + email);
 
         if (userModel != null && email != null) {
-            org.keycloak.email.DefaultEmailSenderProvider senderProvider = new org.keycloak.email.DefaultEmailSenderProvider(keycloakSession);
+            DefaultEmailSenderProvider senderProvider = new DefaultEmailSenderProvider(keycloakSession);
+            Map<String, String> smtpConfig = keycloakSession.getContext().getRealm().getSmtpConfig();
             try {
                 senderProvider.send(
-                        keycloakSession.getContext().getRealm().getSmtpConfig(),
+                        smtpConfig,
                         userModel,
                         "смена пароля",
                         "для смены пароля перейдите по ссылке: http://www.smth.ru/reset-password/" + tokenSerialized,
                         "для смены пароля перейдите по ссылке: <a href=\"http://www.smth.ru/reset-password/" + tokenSerialized + "\">сменить пароль</a>"
                 );
             } catch (EmailException e) {
-                e.printStackTrace();
+                throw new InternalServerErrorException("error sending email to " + email);
             }
         }
 
