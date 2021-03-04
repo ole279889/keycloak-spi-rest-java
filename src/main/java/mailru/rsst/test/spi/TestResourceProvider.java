@@ -30,7 +30,7 @@ public class TestResourceProvider implements RealmResourceProvider {
     @Path("reset-password")
     @POST
     @Encoded
-    public void resetPassword(ResetPasswordRequest resetPasswordRequest) throws EmailException {
+    public void resetPassword(ResetPasswordRequest resetPasswordRequest) {
 
         logger.info("request " + resetPasswordRequest);
         RealmModel realm = keycloakSession.getContext().getRealm();
@@ -42,6 +42,9 @@ public class TestResourceProvider implements RealmResourceProvider {
         }
 
         ResetCredentialsActionToken token = new ResetCredentialsActionToken(userModel.getId(), 1000);
+
+        logger.info("uri " + uri);
+
         String tokenSerialized = token.serialize(keycloakSession, realm, uri);
         logger.info("token " + tokenSerialized);
 
