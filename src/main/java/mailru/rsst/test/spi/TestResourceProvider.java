@@ -7,6 +7,8 @@ import org.keycloak.services.resource.RealmResourceProvider;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.UriInfo;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,13 +28,19 @@ public class TestResourceProvider implements RealmResourceProvider {
     public void resetPassword(ResetPasswordRequest resetPasswordRequest) {
         logger.info("request " + resetPasswordRequest);
         RealmModel realm = keycloakSession.getContext().getRealm();
+        UriInfo uri = keycloakSession.getContext().getUri();
         UserModel userModel = keycloakSession.users().getUserByUsername(resetPasswordRequest.getUsername(), realm);
         if (userModel == null) {
             throw new NotFoundException("user with username " + resetPasswordRequest.getUsername() + " not found");
         }
         logger.info("user " + userModel.getId() + " " + userModel.getUsername());
-        userModel.addRequiredAction(UserModel.RequiredAction.UPDATE_PASSWORD);
-        logger.info("added required action");
+
+        ResetCredentialsActionToken token = new ResetCredentialsActionToken(userModel.getId(), 1000);
+
+        logger.info("token " + token.serialize(keycloakSession, realm, uri));
+
+        //userModel.addRequiredAction(UserModel.RequiredAction.UPDATE_PASSWORD);
+        //logger.info("added required action");
     }
 
     public Object getResource() {
