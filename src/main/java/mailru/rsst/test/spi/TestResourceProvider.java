@@ -48,7 +48,7 @@ public class TestResourceProvider implements RealmResourceProvider {
         String email = userModel.getEmail();
         logger.info("email " + email);
 
-        if (userModel != null && email != null) {
+        if (email != null) {
             DefaultEmailSenderProvider senderProvider = new DefaultEmailSenderProvider(keycloakSession);
             Map<String, String> smtpConfig = keycloakSession.getContext().getRealm().getSmtpConfig();
             try {
@@ -62,6 +62,8 @@ public class TestResourceProvider implements RealmResourceProvider {
             } catch (EmailException e) {
                 throw new InternalServerErrorException("error sending email to " + email);
             }
+        } else {
+            throw new InternalServerErrorException("user " + userModel.getUsername() + " has no email");
         }
 
         //userModel.addRequiredAction(UserModel.RequiredAction.UPDATE_PASSWORD);
