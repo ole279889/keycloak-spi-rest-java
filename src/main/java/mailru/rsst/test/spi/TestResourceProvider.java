@@ -1,11 +1,13 @@
 package mailru.rsst.test.spi;
 
+import mailru.rsst.test.spi.entity.RequestingResetPasswordRequest;
 import mailru.rsst.test.spi.entity.ResetPasswordRequest;
+import mailru.rsst.test.spi.token.ResetCredentialsActionToken;
+import org.jboss.resteasy.annotations.cache.NoCache;
+import org.keycloak.credential.*;
 import org.keycloak.email.DefaultEmailSenderProvider;
 import org.keycloak.email.EmailException;
-import org.keycloak.models.KeycloakSession;
-import org.keycloak.models.RealmModel;
-import org.keycloak.models.UserModel;
+import org.keycloak.models.*;
 import org.keycloak.services.resource.RealmResourceProvider;
 
 import javax.ws.rs.*;
@@ -27,12 +29,12 @@ public class TestResourceProvider implements RealmResourceProvider {
     }
 
     @Produces(MediaType.APPLICATION_JSON)
-    @Path("reset-password")
+    @Path("request-reset-password")
     @POST
     @Encoded
-    public void resetPassword(ResetPasswordRequest resetPasswordRequest) {
+    @NoCache
+    public void requestResetPassword(RequestingResetPasswordRequest resetPasswordRequest) {
 
-        logger.info("request " + resetPasswordRequest);
         RealmModel realm = keycloakSession.getContext().getRealm();
         UriInfo uri = keycloakSession.getContext().getUri();
         UserModel userModel = keycloakSession.users().getUserByUsername(resetPasswordRequest.getUsername(), realm);
@@ -68,9 +70,35 @@ public class TestResourceProvider implements RealmResourceProvider {
         } else {
             throw new InternalServerErrorException("user " + userModel.getUsername() + " has no email");
         }
+    }
 
-        //userModel.addRequiredAction(UserModel.RequiredAction.UPDATE_PASSWORD);
-        //logger.info("added required action");
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("reset-password")
+    @POST
+    @Encoded
+    @NoCache
+    public void resetPassword(ResetPasswordRequest resetPasswordRequest) {
+
+        String tokenSerialized = resetPasswordRequest.getToken();
+        String newPassword = resetPasswordRequest.getNewPassword();
+        String confirmation = resetPasswordRequest.getConfirmation();
+
+        TokenManager tokenManager = keycloakSession.tokens();
+        ResetCredentialsActionToken token = tokenManager.decode(tokenSerialized, ResetCredentialsActionToken.class);
+
+        RealmModel realm = keycloakSession.getContext().getRealm();
+        UserModel userModel = keycloakSession.users().getUserById(token.getSubject(), realm);
+
+        if (userModel != null && /*!token.isExpired() && */newPassword.equals(confirmation)) {
+
+            PasswordCredentialProvider passwordProvider = (PasswordCredentialProvider) keycloakSession.getProvider(CredentialProvider.class, PasswordCredentialProviderFactory.PROVIDER_ID);
+            passwordProvider.createCredential(realm, userModel, newPassword);
+
+            logger.info("-->" + userModel.getUsername() + " password changed to " + newPassword);
+
+        } else if (!newPassword.equals(confirmation)) {
+            throw new BadRequestException("new password and confirmation are not equal");
+        }
     }
 
     public Object getResource() {

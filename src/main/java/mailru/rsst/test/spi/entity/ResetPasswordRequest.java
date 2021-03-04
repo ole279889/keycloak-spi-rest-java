@@ -2,15 +2,21 @@ package mailru.rsst.test.spi.entity;
 
 public class ResetPasswordRequest {
 
-    private String username;
+    private String token;
+    private String newPassword;
+    private String confirmation;
 
     ResetPasswordRequest() {}
 
-    public String getUsername() {
-        return username;
+    public String getToken() {
+        return token;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
+    public String getNewPassword() {
+        return newPassword;
+    }
+
+    public String getConfirmation() {
+        return confirmation;
     }
 }
