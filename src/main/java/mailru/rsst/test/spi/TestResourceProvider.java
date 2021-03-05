@@ -4,6 +4,7 @@ import mailru.rsst.test.spi.entity.RequestingResetPasswordRequest;
 import mailru.rsst.test.spi.entity.ResetPasswordRequest;
 import mailru.rsst.test.spi.token.ResetCredentialsActionToken;
 import org.jboss.resteasy.annotations.cache.NoCache;
+import org.keycloak.common.util.Time;
 import org.keycloak.credential.*;
 import org.keycloak.email.DefaultEmailSenderProvider;
 import org.keycloak.email.EmailException;
@@ -23,6 +24,7 @@ public class TestResourceProvider implements RealmResourceProvider {
 
     private KeycloakSession keycloakSession;
     private final Logger logger = LoggerFactory.getLogger(TestResourceProvider.class);
+    private int TOKEN_EXPIRATION_INTERVAL_SEC = 86400;
 
     public TestResourceProvider(KeycloakSession keycloakSession) {
         this.keycloakSession = keycloakSession;
@@ -43,15 +45,13 @@ public class TestResourceProvider implements RealmResourceProvider {
             throw new NotFoundException("user with username " + resetPasswordRequest.getUsername() + " not found");
         }
 
-        ResetCredentialsActionToken token = new ResetCredentialsActionToken(userModel.getId(), 1000);
-
-        logger.info("uri " + uri);
+        int expirationTime = Time.currentTime() + TOKEN_EXPIRATION_INTERVAL_SEC;
+        ResetCredentialsActionToken token = new ResetCredentialsActionToken(userModel.getId(), expirationTime);
 
         String tokenSerialized = token.serialize(keycloakSession, realm, uri);
         logger.info("token " + tokenSerialized);
 
         String email = userModel.getEmail();
-        logger.info("email " + email);
 
         if (email != null) {
             DefaultEmailSenderProvider senderProvider = new DefaultEmailSenderProvider(keycloakSession);
@@ -86,16 +86,17 @@ public class TestResourceProvider implements RealmResourceProvider {
         TokenManager tokenManager = keycloakSession.tokens();
         ResetCredentialsActionToken token = tokenManager.decode(tokenSerialized, ResetCredentialsActionToken.class);
 
+        if (token.isExpired()) {
+            throw new BadRequestException("token is expired!");
+        }
+
         RealmModel realm = keycloakSession.getContext().getRealm();
         UserModel userModel = keycloakSession.users().getUserById(token.getSubject(), realm);
 
-        if (userModel != null && /*!token.isExpired() && */newPassword.equals(confirmation)) {
-
+        if (userModel != null && newPassword.equals(confirmation)) {
             PasswordCredentialProvider passwordProvider = (PasswordCredentialProvider) keycloakSession.getProvider(CredentialProvider.class, PasswordCredentialProviderFactory.PROVIDER_ID);
             passwordProvider.createCredential(realm, userModel, newPassword);
-
             logger.info("-->" + userModel.getUsername() + " password changed to " + newPassword);
-
         } else if (!newPassword.equals(confirmation)) {
             throw new BadRequestException("new password and confirmation are not equal");
         }
@@ -108,4 +109,5 @@ public class TestResourceProvider implements RealmResourceProvider {
     public void close() {
 
     }
+
 }
