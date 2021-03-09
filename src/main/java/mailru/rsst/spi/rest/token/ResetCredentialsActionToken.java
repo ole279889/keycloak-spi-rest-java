@@ -1,4 +1,4 @@
-package mailru.rsst.test.spi.token;
+package mailru.rsst.spi.rest.token;
 
 
 import org.keycloak.authentication.actiontoken.DefaultActionToken;

@@ -1,32 +1,35 @@
-package mailru.rsst.test.spi;
+package mailru.rsst.spi.rest;
 
-import mailru.rsst.test.spi.entity.RequestingResetPasswordRequest;
-import mailru.rsst.test.spi.entity.ResetPasswordRequest;
-import mailru.rsst.test.spi.token.ResetCredentialsActionToken;
 import org.jboss.resteasy.annotations.cache.NoCache;
 import org.keycloak.common.util.Time;
-import org.keycloak.credential.*;
+import org.keycloak.credential.CredentialProvider;
+import org.keycloak.credential.PasswordCredentialProvider;
+import org.keycloak.credential.PasswordCredentialProviderFactory;
 import org.keycloak.email.DefaultEmailSenderProvider;
 import org.keycloak.email.EmailException;
-import org.keycloak.models.*;
+import org.keycloak.models.KeycloakSession;
+import org.keycloak.models.RealmModel;
+import org.keycloak.models.TokenManager;
+import org.keycloak.models.UserModel;
 import org.keycloak.services.resource.RealmResourceProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import mailru.rsst.spi.rest.entity.RequestingResetPasswordRequest;
+import mailru.rsst.spi.rest.entity.ResetPasswordRequest;
+import mailru.rsst.spi.rest.token.ResetCredentialsActionToken;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Map;
 
-public class TestResourceProvider implements RealmResourceProvider {
+public class RestResourceProvider implements RealmResourceProvider {
 
     private KeycloakSession keycloakSession;
-    private final Logger logger = LoggerFactory.getLogger(TestResourceProvider.class);
-    private int TOKEN_EXPIRATION_INTERVAL_SEC = 86400;
+    private final Logger logger = LoggerFactory.getLogger(RestResourceProvider.class);
+    private int TOKEN_EXPIRATION_INTERVAL_SEC = 86400; //сутки
 
-    public TestResourceProvider(KeycloakSession keycloakSession) {
+    public RestResourceProvider(KeycloakSession keycloakSession) {
         this.keycloakSession = keycloakSession;
     }
 
@@ -61,8 +64,8 @@ public class TestResourceProvider implements RealmResourceProvider {
                         smtpConfig,
                         userModel,
                         "смена пароля",
-                        "для смены пароля перейдите по ссылке: http://www.smth.ru/reset-password/" + tokenSerialized,
-                        "для смены пароля перейдите по ссылке: <a href=\"http://www.smth.ru/reset-password/" + tokenSerialized + "\">сменить пароль</a>"
+                        "для смены пароля перейдите по ссылке: http://www.smth.ru/reset-password?token=" + tokenSerialized,
+                        "для смены пароля перейдите по ссылке: <a href=\"http://www.smth.ru/reset-password?token=" + tokenSerialized + "\">сменить пароль</a>"
                 );
             } catch (EmailException e) {
                 throw new InternalServerErrorException("error sending email to " + email);
@@ -109,5 +112,4 @@ public class TestResourceProvider implements RealmResourceProvider {
     public void close() {
 
     }
-
 }

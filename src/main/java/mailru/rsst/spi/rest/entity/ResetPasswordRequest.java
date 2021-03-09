@@ -1,4 +1,4 @@
-package mailru.rsst.test.spi.entity;
+package mailru.rsst.spi.rest.entity;
 
 public class ResetPasswordRequest {
 
