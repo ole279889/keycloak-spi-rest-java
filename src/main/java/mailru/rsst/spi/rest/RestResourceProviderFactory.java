@@ -1,6 +1,5 @@
 package mailru.rsst.spi.rest;
 
-import mailru.rsst.test.spi.TestResourceProvider;
 import org.keycloak.Config;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
@@ -12,7 +11,7 @@ public class RestResourceProviderFactory implements RealmResourceProviderFactory
     private String REST_SPI_PROVIDER_ID = "rest-spi-provider";
 
     public RealmResourceProvider create(KeycloakSession keycloakSession) {
-        return new TestResourceProvider(keycloakSession);
+        return new RestResourceProvider(keycloakSession);
     }
 
     public void init(Config.Scope scope) {
