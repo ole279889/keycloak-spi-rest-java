@@ -47,7 +47,7 @@
     </dependencies>
 
     <build>
-        <finalName>keycloak-test-spi</finalName>
+        <finalName>keycloak-spi-rest</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
